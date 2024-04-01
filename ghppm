@@ -5,16 +5,61 @@ import sys
 import argparse
 import configparser
 import pdb
+import subprocess
+import tempfile
+import shutil
+import json
 
 g_config_names = ['user.name', 'user.email']
 g_config_file_path = os.path.expanduser('~/.ghppm.conf')
 g_commands = ['list', 'install', 'reinstall', 'remove', 'update', 'upgrade', 'edit-sources']
 g_source_list = 'sources.ghppm'
+g_aways_ignore = ['.git', 'README']
+g_cache_file = 'cache.ghppm'
 
 config = configparser.ConfigParser()
-g_info = []
+g_source_list = os.path.join(os.getcwd(), g_source_list)
+g_cache_file = os.path.join(os.getcwd(), g_cache_file)
+
+def file_shooting(file):
+	if any(excluded_string in file for excluded_string in g_aways_ignore):
+		return False
+	return True
+
+def update_single(url):
+	target_dir = os.getcwd()
+	with tempfile.TemporaryDirectory() as temp_dir:
+		clone_command = ['git', 'clone', url, temp_dir]
+		subprocess.run(clone_command, check=True, stdout=subprocess.DEVNULL)
+		allfiles = [os.path.join(root, filename) for root, directories, filenames in os.walk(temp_dir) for filename in filenames]
+		filtered_files = [os.path.basename(file) for file in allfiles if file_shooting(file)]
+		return filtered_files
+
+def update():
+	global g_info
+	g_info = []
+	for source in g_sources:
+		g_info.append({
+			'url': source,
+			'file': update_single(source)
+		})
+
+def save_cache():
+	with open(g_cache_file, 'w') as f:
+		json.dump(g_info, f)
+
+def load_cache():
+	global g_info
+	g_info = []
+	if not os.path.exists(g_cache_file):
+		print(f"Cache '{g_cache_file}' is empty.")
+		return
+	with open(g_cache_file, 'r') as f:
+		g_info = json.load(f)
 
 def pretty_print_repo_info():
+	if not len(g_info):
+		return
 	for j, repo in enumerate(g_info):
 		print(f"{repo['url']}:")
 		print(" ", end = '')
@@ -25,11 +70,6 @@ def pretty_print_repo_info():
 			else:
 				print()
 
-def get_repo_files():
-	global g_info
-	for source in g_sources:
-		g_info.append({'url': source, 'file': ['foo', 'bar']})
-
 def parse_source(file):
 	global g_sources
 	content = file.read().strip()
@@ -37,11 +77,11 @@ def parse_source(file):
 
 def load_sources():
 	global g_sources
-	file_path = os.path.join(os.getcwd(), g_source_list)
-	if not os.path.exists(file_path):
-		print(f"File {file_path} does not exist.")
-		return []
-	with open(file_path, 'r') as file:
+	if not os.path.exists(g_source_list):
+		print(f"Sources '{g_source_list}' are empty.")
+		g_sources = []
+		return
+	with open(g_source_list, 'r') as file:
 		parse_source(file)
 
 def create_parser():
@@ -133,9 +173,12 @@ def parse_arguments(parser):
 	if args.command:
 		print(f'Got command {args.command}.')
 		if args.command == 'list':
-			load_sources()
-			get_repo_files()
+			load_cache()
 			pretty_print_repo_info()
+		if args.command == 'update':
+			load_sources()
+			update()
+			save_cache()
 #		print(args)
 #		print(args.config)
 
