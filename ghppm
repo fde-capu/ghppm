@@ -8,7 +8,7 @@ import configparser
 g_config_names = ['user.name', 'user.email']
 g_config_file_path = os.path.expanduser('~/.ghppm.conf')
 g_commands = ['list', 'install', 'reinstall', 'remove', 'update', 'upgrade', 'edit-sources']
-g_source_list = 'ghppm.sources'
+g_source_list = 'sources.ghppm'
 
 config = configparser.ConfigParser()
 
