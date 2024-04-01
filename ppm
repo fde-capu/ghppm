@@ -3,8 +3,9 @@
 import sys
 import argparse
 
+g_config_names = ['user.name', 'user.email']
+
 def create_parser():
-	# Create the parser
 	parser = argparse.ArgumentParser(description="Personal Package Manager.")
 	parser.add_argument(
 		'--config',
@@ -13,8 +14,19 @@ def create_parser():
 	)
 	return parser
 
+def load_configs():
+	for conf in g_config_names:
+		globals()[conf] = None
+
 def is_global(gopt):
-	return gopt in ['user.name', 'user.email']
+	return gopt in g_config_names
+
+def show_conf(conf):
+	print(f'{conf}: {globals()[conf]}')
+
+def show_all_configs():
+	for conf in g_config_names:
+		show_conf(conf)
 
 def is_get_global(i, glist):
 	if not is_global(glist[i]):
@@ -24,7 +36,7 @@ def is_get_global(i, glist):
 	if is_global(glist[i + 1]):
 		return glist[i]
 	return False
-	
+
 def is_set_global(i, glist):
 	if is_get_global(i, glist):
 		return False
@@ -34,14 +46,25 @@ def is_set_global(i, glist):
 
 def parse_arguments(parser):
 	args = parser.parse_args()
+	conf_skip = False
+	if args.config == []:
+		show_all_configs()
 	if args.config:
 		for i, conf in enumerate(args.config):
+			if conf_skip:
+				conf_skip = False
+				continue
+			conf_skip = False
 			if is_get_global(i, args.config):
-				print(f'{conf}: {global(conf)}')
+				show_conf(conf)
 			elif is_set_global(i, args.config):
-				global[conf] = args.config[i + 1]
-				print(f'global[{conf}] set to {global[conf]}.')
-		print(args.config)	
+				globals()[conf] = args.config[i + 1]
+				conf_skip = True
+				print(f'{conf} set to {globals()[conf]}.')
+			else:
+				parser.error(f'Unkown option: \'{conf}\'.')
+#		print(args)
+#		print(args.config)
 
 	# Use the parsed arguments
 #	if args.input_file:
@@ -57,6 +80,7 @@ def parse_arguments(parser):
 #		print("Verbose mode is on")
 
 def main():
+	load_configs()
 	parser = create_parser()
 	parse_arguments(parser)
 	sys.exit()
