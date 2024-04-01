@@ -8,20 +8,38 @@ import configparser
 g_config_names = ['user.name', 'user.email']
 g_config_file_path = os.path.expanduser('~/.ghppm.conf')
 g_commands = ['list', 'install', 'reinstall', 'remove', 'update', 'upgrade', 'edit-sources']
+g_source_list = 'ghppm.sources'
 
 config = configparser.ConfigParser()
+
+def parse_source(file):
+	global g_sources
+	print('Parsing.')
+	content = file.read().strip()
+	g_sources = [source.strip() for source in content.split('\n') if source.strip()]
+	print(g_sources)
+
+def load_sources():
+	file_path = os.path.join(os.getcwd(), g_source_list)
+	if not os.path.exists(file_path):
+		print(f"File {file_path} does not exist.")
+		return []
+	with open(file_path, 'r') as file:
+		repo_info_list = parse_source(file)
+	return repo_info_list
 
 def create_parser():
 	parser = argparse.ArgumentParser(description="Personal Package Manager.")
 	parser.add_argument(
+		'command',
+		choices=g_commands,
+		nargs='?',
+		help=f'The command to run.'
+	)
+	parser.add_argument(
 		'--config',
 		action='extend', type=str, nargs='*',
 		help="user.name: set GitHub user name."
-	)
-	parser.add_argument(
-		'command',
-		choices=g_commands,
-		help=f'The command to run.'
 	)
 	return parser
 
@@ -98,6 +116,8 @@ def parse_arguments(parser):
 				parser.error(f'Unknown option: \'{conf}\'.')
 	if args.command:
 		print(f'Got command {args.command}.')
+		if args.command == 'list':
+			load_sources()
 #		print(args)
 #		print(args.config)
 
