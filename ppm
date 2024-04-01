@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+
+def create_parser():
+	# Create the parser
+	parser = argparse.ArgumentParser(description="Personal Package Manager.")
+	parser.add_argument(
+		'--config',
+		action='extend', type=str, nargs='*',
+		help="user.name: set GitHub user name."
+	)
+	return parser
+
+def is_global(gopt):
+	return gopt in ['user.name', 'user.email']
+
+def is_get_global(i, glist):
+	if not is_global(glist[i]):
+		return False
+	if i == len(glist) - 1:
+		return glist[i]
+	if is_global(glist[i + 1]):
+		return glist[i]
+	return False
+	
+def is_set_global(i, glist):
+	if is_get_global(i, glist):
+		return False
+	if is_global(glist[i]):
+		return glist[i + 1]
+	return False
+
+def parse_arguments(parser):
+	args = parser.parse_args()
+	if args.config:
+		for i, conf in enumerate(args.config):
+			if is_get_global(i, args.config):
+				print(f'{conf}: {global(conf)}')
+			elif is_set_global(i, args.config):
+				global[conf] = args.config[i + 1]
+				print(f'global[{conf}] set to {global[conf]}.')
+		print(args.config)	
+
+	# Use the parsed arguments
+#	if args.input_file:
+#		print(f"Input file: {args.input_file}")
+#	if args.output:
+#		print(f"Output file: {args.output}")
+#	if args.mode:
+#		print(f"Mode: {args.mode}")
+#	if args.list:
+#		print(f"List: {args.list}")
+#	print(f"Default: {args.default}")
+#	if args.verbose:
+#		print("Verbose mode is on")
+
+def main():
+	parser = create_parser()
+	parse_arguments(parser)
+	sys.exit()
+
+if __name__ == "__main__":
+	main()
