@@ -35,6 +35,10 @@ def load_configs():
 		if not config.has_option('ppm', conf):
 			config['ppm'][conf] = ''
 			save_again = True
+	for key in config.options('ppm'):
+		if not key in g_config_names:
+			config.remove_option('ppm', key)
+			save_again = True
 	if save_again:
 		save_config()
 
@@ -58,6 +62,8 @@ def is_get_global(i, glist):
 	return False
 
 def is_set_global(i, glist):
+	if not glist[i] in g_config_names:
+		return False
 	if is_get_global(i, glist):
 		return False
 	if is_config(glist[i]):
