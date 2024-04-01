@@ -14,9 +14,8 @@ config = configparser.ConfigParser()
 
 def parse_source(file):
 	global g_sources
-	print('Parsing.')
 	content = file.read().strip()
-	g_sources = [source.strip() for source in content.split('\n') if source.strip()]
+	g_sources = ['git@github.com:' + config['ghppm']['user.name'] + '/' + source.strip() for source in content.split('\n') if source.strip()]
 	print(g_sources)
 
 def load_sources():
