@@ -6,7 +6,8 @@ import argparse
 import configparser
 
 g_config_names = ['user.name', 'user.email']
-g_config_file_path = os.path.expanduser('~/.ppm.conf')
+g_config_file_path = os.path.expanduser('~/.ghppm.conf')
+g_commands = ['list', 'install', 'reinstall', 'remove', 'update', 'upgrade', 'edit-sources']
 
 config = configparser.ConfigParser()
 
@@ -17,6 +18,11 @@ def create_parser():
 		action='extend', type=str, nargs='*',
 		help="user.name: set GitHub user name."
 	)
+	parser.add_argument(
+		'command',
+		choices=g_commands,
+		help=f'The command to run.'
+	)
 	return parser
 
 def save_config():
@@ -26,27 +32,27 @@ def save_config():
 def load_configs():
 	global config
 	if not os.path.exists(g_config_file_path):
-		config['ppm'] = {}
+		config['ghppm'] = {}
 		save_config()
 	else:
 		config.read(g_config_file_path)
 	save_again = False
 	for conf in g_config_names:
-		if not config.has_option('ppm', conf):
-			config['ppm'][conf] = ''
+		if not config.has_option('ghppm', conf):
+			config['ghppm'][conf] = ''
 			save_again = True
-	for key in config.options('ppm'):
+	for key in config.options('ghppm'):
 		if not key in g_config_names:
-			config.remove_option('ppm', key)
+			config.remove_option('ghppm', key)
 			save_again = True
 	if save_again:
 		save_config()
 
 def is_config(gopt):
-	return config.has_option('ppm', gopt)
+	return config.has_option('ghppm', gopt)
 
 def show_conf(conf):
-	print(f'{conf}: {config["ppm"][conf]}')
+	print(f'{conf}: {config["ghppm"][conf]}')
 
 def show_all_configs():
 	for conf in g_config_names:
@@ -84,12 +90,14 @@ def parse_arguments(parser):
 			if is_get_global(i, args.config):
 				show_conf(conf)
 			elif is_set_global(i, args.config):
-				config["ppm"][conf] = args.config[i + 1]
+				config["ghppm"][conf] = args.config[i + 1]
 				conf_skip = True
-				print(f'{conf} set to {config["ppm"][conf]}.')
+				print(f'{conf} set to {config["ghppm"][conf]}.')
 				save_config()
 			else:
 				parser.error(f'Unknown option: \'{conf}\'.')
+	if args.command:
+		print(f'Got command {args.command}.')
 #		print(args)
 #		print(args.config)
 
