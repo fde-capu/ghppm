@@ -29,7 +29,7 @@ def load_sources():
 	return repo_info_list
 
 def create_parser():
-	parser = argparse.ArgumentParser(description="Personal Package Manager.")
+	parser = argparse.ArgumentParser(description="GitHub Personal Package Manager.")
 	parser.add_argument(
 		'command',
 		choices=g_commands,
