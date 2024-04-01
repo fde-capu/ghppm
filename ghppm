@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 import configparser
+import pdb
 
 g_config_names = ['user.name', 'user.email']
 g_config_file_path = os.path.expanduser('~/.ghppm.conf')
@@ -11,21 +12,37 @@ g_commands = ['list', 'install', 'reinstall', 'remove', 'update', 'upgrade', 'ed
 g_source_list = 'sources.ghppm'
 
 config = configparser.ConfigParser()
+g_info = []
+
+def pretty_print_repo_info():
+	for j, repo in enumerate(g_info):
+		print(f"{repo['url']}:")
+		print(" ", end = '')
+		for i, file in enumerate(repo['file']):
+			print(file, end = '')
+			if i < len(repo['file']) - 1:
+				print(', ', end = '')
+			else:
+				print()
+
+def get_repo_files():
+	global g_info
+	for source in g_sources:
+		g_info.append({'url': source, 'file': ['foo', 'bar']})
 
 def parse_source(file):
 	global g_sources
 	content = file.read().strip()
 	g_sources = ['git@github.com:' + config['ghppm']['user.name'] + '/' + source.strip() for source in content.split('\n') if source.strip()]
-	print(g_sources)
 
 def load_sources():
+	global g_sources
 	file_path = os.path.join(os.getcwd(), g_source_list)
 	if not os.path.exists(file_path):
 		print(f"File {file_path} does not exist.")
 		return []
 	with open(file_path, 'r') as file:
-		repo_info_list = parse_source(file)
-	return repo_info_list
+		parse_source(file)
 
 def create_parser():
 	parser = argparse.ArgumentParser(description="GitHub Personal Package Manager.")
@@ -117,6 +134,8 @@ def parse_arguments(parser):
 		print(f'Got command {args.command}.')
 		if args.command == 'list':
 			load_sources()
+			get_repo_files()
+			pretty_print_repo_info()
 #		print(args)
 #		print(args.config)
 
