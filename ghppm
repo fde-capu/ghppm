@@ -33,7 +33,7 @@ def get_repo_files():
 def parse_source(file):
 	global g_sources
 	content = file.read().strip()
-	g_sources = ['git@github.com:' + config['ghppm']['user.name'] + '/' + source.strip() for source in content.split('\n') if source.strip()]
+	g_sources = ['git@github.com:' + config['ghppm']['user.name'] + '/' + source.strip() for source in content.split('\n') if source.strip() and source.strip()[0] != '#']
 
 def load_sources():
 	global g_sources
