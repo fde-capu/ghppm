@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import argparse
+import configparser
 
 g_config_names = ['user.name', 'user.email']
+g_config_file_path = os.path.expanduser('~/.ppm.conf')
+
+config = configparser.ConfigParser()
 
 def create_parser():
 	parser = argparse.ArgumentParser(description="Personal Package Manager.")
@@ -14,33 +19,48 @@ def create_parser():
 	)
 	return parser
 
-def load_configs():
-	for conf in g_config_names:
-		globals()[conf] = None
+def save_config():
+	with open(g_config_file_path, 'w') as configfile:
+		config.write(configfile)
 
-def is_global(gopt):
-	return gopt in g_config_names
+def load_configs():
+	global config
+	if not os.path.exists(g_config_file_path):
+		config['ppm'] = {}
+		save_config()
+	else:
+		config.read(g_config_file_path)
+	save_again = False
+	for conf in g_config_names:
+		if not config.has_option('ppm', conf):
+			config['ppm'][conf] = ''
+			save_again = True
+	if save_again:
+		save_config()
+
+def is_config(gopt):
+	return config.has_option('ppm', gopt)
 
 def show_conf(conf):
-	print(f'{conf}: {globals()[conf]}')
+	print(f'{conf}: {config["ppm"][conf]}')
 
 def show_all_configs():
 	for conf in g_config_names:
 		show_conf(conf)
 
 def is_get_global(i, glist):
-	if not is_global(glist[i]):
+	if not is_config(glist[i]):
 		return False
 	if i == len(glist) - 1:
 		return glist[i]
-	if is_global(glist[i + 1]):
+	if is_config(glist[i + 1]):
 		return glist[i]
 	return False
 
 def is_set_global(i, glist):
 	if is_get_global(i, glist):
 		return False
-	if is_global(glist[i]):
+	if is_config(glist[i]):
 		return glist[i + 1]
 	return False
 
@@ -58,9 +78,10 @@ def parse_arguments(parser):
 			if is_get_global(i, args.config):
 				show_conf(conf)
 			elif is_set_global(i, args.config):
-				globals()[conf] = args.config[i + 1]
+				config["ppm"][conf] = args.config[i + 1]
 				conf_skip = True
-				print(f'{conf} set to {globals()[conf]}.')
+				print(f'{conf} set to {config["ppm"][conf]}.')
+				save_config()
 			else:
 				parser.error(f'Unknown option: \'{conf}\'.')
 #		print(args)
