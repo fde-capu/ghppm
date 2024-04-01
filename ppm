@@ -62,7 +62,7 @@ def parse_arguments(parser):
 				conf_skip = True
 				print(f'{conf} set to {globals()[conf]}.')
 			else:
-				parser.error(f'Unkown option: \'{conf}\'.')
+				parser.error(f'Unknown option: \'{conf}\'.')
 #		print(args)
 #		print(args.config)
 
