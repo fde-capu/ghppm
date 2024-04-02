@@ -190,6 +190,10 @@ def is_set_global(i, glist):
 		return glist[i + 1]
 	return False
 
+def there_is_no(opt):
+	return not config.has_option('ghppm', opt) \
+		or not len(config['ghppm'][opt])
+
 def parse_arguments(parser):
 	args = parser.parse_args()
 	conf_skip = False
@@ -216,6 +220,9 @@ def parse_arguments(parser):
 			load_cache()
 			pretty_print_repo_info()
 		if args.command == 'update':
+			if there_is_no('user.name'):
+				print(f'Error: user.name is not defined.\nUse `{sys.argv[0]} --config user.name your_user_name` to set it up.')
+				sys.exit(1)
 			load_sources()
 			update()
 			save_cache()
