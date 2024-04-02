@@ -100,6 +100,15 @@ def is_sshUrl_convert(entry):
 		return 'git@github.com:' + config['ghppm']['user.name'] + '/' + entry + '.git'
 	return False
 
+def is_all_from_user(entry):
+	afu = r'^user [\w-]+ \*$'
+	if re.match(afu, entry):
+		return entry.split(' ')[1]
+	return False
+
+def fetch_all_names_from_user(user):
+	return f'WILL FETCH ALL FROM {user}!'
+
 def parse_source(file):
 	global g_sources
 	g_sources = []
@@ -112,7 +121,11 @@ def parse_source(file):
 		if sshUrl:
 			g_sources.extend([sshUrl])
 			continue
-	print('GSOURCES', g_sources)
+		all_from_user = is_all_from_user(entry)
+		if all_from_user:
+			g_sources.extend([fetch_all_names_from_user(all_from_user)])
+			continue
+	print(g_sources)
 	sys.exit()
 
 def load_sources():
