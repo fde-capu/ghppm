@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import shutil
 import json
+import re
 
 g_config_names = ['user.name', 'user.email']
 g_config_file_path = os.path.expanduser('~/.ghppm.conf')
@@ -45,10 +46,10 @@ def update():
 	retrieve_command = ['gh', 'repo', 'list', config['ghppm']['user.name'], '--source', '-L', '2000']
 	for element in json_elements:
 		retrieve_command.extend(['--json', element])
-	print(retrieve_command)
-	g_info = subprocess.run(retrieve_command, check=True)
-	print(g_info)
+	g_info = subprocess.run(retrieve_command, check=True, capture_output = True)
+	g_info = g_info.stdout
 	sys.exit()
+
 	for source in g_sources:
 		g_info.append({
 			'sshUrl': source,
@@ -81,10 +82,51 @@ def pretty_print_repo_info():
 			else:
 				print()
 
+def is_sshUrl_convert(entry):
+	full_sshUrl = r'^git@github\.com:[\w-]+/[\w-]+(\.git)$'
+	if re.match(full_sshUrl, entry):
+		return entry
+	user_repo_git = r'^[\w-]+/[\w-]+(\.git)$'
+	if re.match(user_repo_git, entry):
+		return 'git@github.com:' + entry
+	user_repo = r'^[\w-]+/[\w-]+$'
+	if re.match(user_repo, entry):
+		return 'git@github.com:' + entry + '.git'
+	repo_git = r'^[\w-]+(\.git)$'
+	if re.match(repo_git, entry):
+		return 'git@github.com:' + config['ghppm']['user.name'] + '/' + entry
+	repo = r'^[\w-]+$'
+	if re.match(repo, entry):
+		return 'git@github.com:' + config['ghppm']['user.name'] + '/' + entry + '.git'
+	return False
+
+def is_all_from_user(entry):
+	afu = r'^user [\w-]+ \*$'
+	if re.match(afu, entry):
+		return entry.split(' ')[1]
+	return False
+
+def fetch_all_names_from_user(user):
+	return f'WILL FETCH ALL FROM {user}!'
+
 def parse_source(file):
 	global g_sources
-	content = file.read().strip()
-	g_sources = ['git@github.com:' + config['ghppm']['user.name'] + '/' + source.strip() for source in content.split('\n') if source.strip() and source.strip()[0] != '#']
+	g_sources = []
+	content = file.read().strip().split('\n')
+	for entry in content:
+		entry = entry.strip()
+		if entry[0] == '#':
+			continue
+		sshUrl = is_sshUrl_convert(entry)
+		if sshUrl:
+			g_sources.extend([sshUrl])
+			continue
+		all_from_user = is_all_from_user(entry)
+		if all_from_user:
+			g_sources.extend([fetch_all_names_from_user(all_from_user)])
+			continue
+	print(g_sources)
+	sys.exit()
 
 def load_sources():
 	global g_sources
@@ -161,6 +203,10 @@ def is_set_global(i, glist):
 		return glist[i + 1]
 	return False
 
+def there_is_no(opt):
+	return not config.has_option('ghppm', opt) \
+		or not len(config['ghppm'][opt])
+
 def parse_arguments(parser):
 	args = parser.parse_args()
 	conf_skip = False
@@ -187,6 +233,9 @@ def parse_arguments(parser):
 			load_cache()
 			pretty_print_repo_info()
 		if args.command == 'update':
+			if there_is_no('user.name'):
+				print(f'Error: user.name is not defined.\nUse `{sys.argv[0]} --config user.name your_user_name` to set it up.')
+				sys.exit(1)
 			load_sources()
 			update()
 			save_cache()
